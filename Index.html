@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>قاعدة بيانات معجم لسان العرب</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            direction: rtl;
+            text-align: right;
+            margin: 20px;
+            background-color: #f9f9f9;
+            color: #333;
+        }
+        h1, h2 {
+            color: #4CAF50;
+        }
+        form {
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+        }
+        input[type="text"], textarea, button {
+            padding: 10px;
+            margin: 5px 0;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            width: 100%;
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            cursor: pointer;
+            width: auto;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        ul {
+            list-style-type: none;
+            padding: 0;
+        }
+        li {
+            background: #fff;
+            margin: 5px 0;
+            padding: 10px;
+            border-radius: 5px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .actions {
+            display: flex;
+            gap: 10px;
+        }
+        .actions button {
+            padding: 5px 10px;
+        }
+    </style>
+</head>
+<body>
+    <h1>قاعدة بيانات معجم لسان العرب</h1>
+    <form id="arabicForm">
+        <label for="rootInput">أدخل الجذر اللغوي:</label>
+        <input type="text" id="rootInput" required>
+
+        <label for="descriptionInput">أدخل الشرح:</label>
+        <textarea id="descriptionInput" rows="4" required></textarea>
+
+        <button type="submit">حفظ</button>
+    </form>
+
+    <h2>النصوص المحفوظة:</h2>
+    <p id="dataCount">عدد النصوص المحفوظة: 0</p>
+    <ul id="savedDataList"></ul>
+
+    <script>
+        // تحميل البيانات من الملف JSON عند تحميل الصفحة
+        let arabicData = [];
+
+        function loadSavedData() {
+            fetch('data.json')
+                .then(response => response.json())
+                .then(data => {
+                    arabicData = data;
+                    updateSavedDataList();
+                })
+                .catch(error => console.error('حدث خطأ أثناء تحميل البيانات:', error));
+        }
+
+        loadSavedData();
+
+        document.getElementById('arabicForm').addEventListener('submit', function(event) {
+            event.preventDefault();
+
+            const rootInput = document.getElementById('rootInput');
+            const descriptionInput = document.getElementById('descriptionInput');
+            const rootValue = rootInput.value.trim();
+            const descriptionValue = descriptionInput.value.trim();
+
+            if (rootValue && descriptionValue) {
+                arabicData.push({ root: rootValue, description: descriptionValue });
+                saveData();
+                updateSavedDataList();
+                rootInput.value = '';
+                descriptionInput.value = '';
+            }
+        });
+
+        function updateSavedDataList() {
+            const savedDataListElement = document.getElementById('savedDataList');
+            savedDataListElement.innerHTML = '';
+
+            arabicData.forEach(function(data, index) {
+                const listItem = document.createElement('li');
+                listItem.innerHTML = `<span><strong>الجذر:</strong> ${data.root}<br><strong>الشرح:</strong> ${data.description}</span>`;
+
+                const actionsDiv = document.createElement('div');
+                actionsDiv.classList.add('actions');
+
+                const editButton = document.createElement('button');
+                editButton.textContent = 'تعديل';
+                editButton.onclick = function() {
+                    editData(index);
+                };
+
+                const deleteButton = document.createElement('button');
+                deleteButton.textContent = 'حذف';
+                deleteButton.onclick = function() {
+                    deleteData(index);
+                };
+
+                actionsDiv.appendChild(editButton);
+                actionsDiv.appendChild(deleteButton);
+
+                listItem.appendChild(actionsDiv);
+                savedDataListElement.appendChild(listItem);
+            });
+
+            document.getElementById('dataCount').textContent = `عدد النصوص المحفوظة: ${arabicData.length}`;
+        }
+
+        function editData(index) {
+            const newDataRoot = prompt('تعديل الجذر اللغوي:', arabicData[index].root);
+            const newDataDescription = prompt('تعديل الشرح:', arabicData[index].description);
+
+            if (newDataRoot !== null && newDataRoot.trim() && newDataDescription !== null && newDataDescription.trim()) {
+                arabicData[index] = { root: newDataRoot, description: newDataDescription };
+                saveData();
+                updateSavedDataList();
+            }
+        }
+
+        function deleteData(index) {
+            arabicData.splice(index, 1);
+            saveData();
+            updateSavedDataList();
+        }
+
+        function saveData() {
+            const jsonData = JSON.stringify(arabicData, null, 2);
+            fetch('data.json', {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: jsonData
+            })
+            .then(response => response.json())
+            .then(data => console.log('تم حفظ البيانات بنجاح'))
+            .catch(error => console.error('حدث خطأ أثناء حفظ البيانات:', error));
+        }
+    </script>
+</body>
+</html>
